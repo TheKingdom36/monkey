@@ -1,6 +1,8 @@
 package lexer
 
-import "monkey/token"
+import (
+	"monkey/token"
+)
 
 type Lexer struct {
 	input        string
@@ -32,7 +34,7 @@ func (l *Lexer) NextToken() token.Token {
 
 	switch l.ch {
 	case '=':
-		tok = newToken(token.ASSIGN, l.ch)
+		tok = l.handleAssign()
 	case ';':
 		tok = newToken(token.SEMICOLON, l.ch)
 	case '(':
@@ -43,6 +45,18 @@ func (l *Lexer) NextToken() token.Token {
 		tok = newToken(token.COMMA, l.ch)
 	case '+':
 		tok = newToken(token.PLUS, l.ch)
+	case '-':
+		tok = newToken(token.MINUS, l.ch)
+	case '!':
+		tok = l.handleBang()
+	case '*':
+		tok = newToken(token.ASTERISK, l.ch)
+	case '/':
+		tok = newToken(token.SLASH, l.ch)
+	case '<':
+		tok = l.handleLessThen()
+	case '>':
+		tok = l.handleGreaterThen()
 	case '{':
 		tok = newToken(token.LBRACE, l.ch)
 	case '}':
@@ -53,12 +67,15 @@ func (l *Lexer) NextToken() token.Token {
 	default:
 		if isLetter(l.ch) {
 			tok.Literal = l.readIdentifier()
-			tok.Type = token.IDENT
+			tok.Type = token.LookupIdent(tok.Literal)
+			return tok
+		} else if isDigit(l.ch) {
+			tok.Literal = l.readNumber()
+			tok.Type = token.INT
 			return tok
 		} else {
 			tok = newToken(token.ILLEGAL, l.ch)
 		}
-
 	}
 
 	l.readChar()
@@ -71,16 +88,20 @@ func newToken(tokenType token.TokenType, ch byte) token.Token {
 
 func (l *Lexer) peek() byte {
 
-	if l.readPosition+1 >= len(l.input) {
+	if l.readPosition >= len(l.input) {
 		return 0
 	}
 
-	return l.input[l.readPosition+1]
+	return l.input[l.readPosition]
 }
 
 func isLetter(ch byte) bool {
 	// Check if the byte value falls within the range of alphanumeric characters
 	return 'a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z' || ch == '_'
+}
+
+func isDigit(ch byte) bool {
+	return '0' <= ch && ch <= '9'
 }
 
 func (l *Lexer) readIdentifier() string {
@@ -95,8 +116,62 @@ func (l *Lexer) readIdentifier() string {
 
 }
 
+func (l *Lexer) readNumber() string {
+	position := l.position
+
+	for isDigit(l.ch) {
+		l.readChar()
+	}
+
+	return l.input[position:l.position]
+}
+
 func (l *Lexer) isEOF() bool {
 	return l.readPosition+1 > len(l.input)
+}
+
+func (l *Lexer) handleAssign() token.Token {
+	if l.peek() == '=' {
+		ch := l.ch
+		l.readChar()
+		literal := string(ch) + string(l.ch)
+		return token.Token{Type: token.EQ, Literal: literal}
+	} else {
+		return newToken(token.ASSIGN, l.ch)
+	}
+}
+
+func (l *Lexer) handleBang() token.Token {
+	if l.peek() == '=' {
+		ch := l.ch
+		l.readChar()
+		literal := string(ch) + string(l.ch)
+		return token.Token{Type: token.NOT_EQ, Literal: literal}
+	} else {
+		return newToken(token.BANG, l.ch)
+	}
+}
+
+func (l *Lexer) handleLessThen() token.Token {
+	if l.peek() == '=' {
+		ch := l.ch
+		l.readChar()
+		literal := string(ch) + string(l.ch)
+		return token.Token{Type: token.NOT_EQ, Literal: literal}
+	} else {
+		return newToken(token.BANG, l.ch)
+	}
+}
+
+func (l *Lexer) handleGreaterThen() token.Token {
+	if l.peek() == '=' {
+		ch := l.ch
+		l.readChar()
+		literal := string(ch) + string(l.ch)
+		return token.Token{Type: token.NOT_EQ, Literal: literal}
+	} else {
+		return newToken(token.BANG, l.ch)
+	}
 }
 
 func (l *Lexer) skipWhitespace() {
