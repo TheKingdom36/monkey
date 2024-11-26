@@ -2,26 +2,104 @@ package parser
 
 import (
 	"monkey/ast"
-	"monkey/token"
+	"monkey/lexer"
 	"testing"
 )
 
-func TestParseLetStatement(t *testing.T) {
-
-	parser := New("let x = 2;")
-
-	program := parser.parse()
-
-	expectedLetStatement := ast.LetStatement{Value: &ast.NumberExpression{Token: token.Token{Type: token.INT, Literal: "2"}, Value: &ast.Indentifer{Value: "2"}}, Name: &ast.Indentifer{Value: "x"}, Token: token.Token{Type: token.LET, Literal: "let"}}
-
-	actualLetStatement := program.Statements[0].(*ast.LetStatement)
-
-	if !equalsTwoLetStatements(expectedLetStatement, *actualLetStatement) {
-		t.Fatalf("tests failed")
+func TestLetStatements(t *testing.T) {
+	input := `
+		let x  5;
+		let y = 10;
+		let foobar = 838383;
+	`
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	if program == nil {
+		t.Fatalf("ParseProgram() returned nil")
 	}
 
+	checkParserErrors(t, &p)
+
+	if len(program.Statements) != 3 {
+		t.Fatalf("program.Statements does not contain 3 statements. got=%d",
+			len(program.Statements))
+	}
+	tests := []struct {
+		expectedIdentifier string
+	}{
+		{"x"},
+		{"y"},
+		{"foobar"},
+	}
+	for i, tt := range tests {
+		stmt := program.Statements[i]
+		if !testLetStatement(t, stmt, tt.expectedIdentifier) {
+			return
+		}
+	}
 }
 
-func equalsTwoLetStatements(expected ast.LetStatement, actual ast.LetStatement) bool {
-	return expected.Name.Value == actual.Name.Value && expected.Value.(*ast.NumberExpression).Value.Value == actual.Value.(*ast.NumberExpression).Value.Value
+func TestReturnStatements(t *testing.T) {
+	input := `
+		return 5;
+	`
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	if program == nil {
+		t.Fatalf("ParseProgram() returned nil")
+	}
+
+	checkParserErrors(t, &p)
+
+	if len(program.Statements) != 1 {
+		t.Fatalf("program.Statements does not contain 1 statements. got=%d",
+			len(program.Statements))
+	}
+	tests := []struct {
+		expectedExpression string
+	}{
+		{"x"},
+	}
+	for i, tt := range tests {
+		stmt := program.Statements[i]
+		if !testLetStatement(t, stmt, tt.expectedExpression) {
+			return
+		}
+	}
+}
+
+func testLetStatement(t *testing.T, s ast.Statement, name string) bool {
+	if s.TokenLiteral() != "let" {
+		t.Errorf("s.TokenLiteral not 'let'. got=%q", s.TokenLiteral())
+		return false
+	}
+	letStmt, ok := s.(*ast.LetStatement)
+	if !ok {
+		t.Errorf("s not *ast.LetStatement. got=%T", s)
+		return false
+	}
+	if letStmt.Name.Value != name {
+		t.Errorf("letStmt.Name.Value not '%s'. got=%s", name, letStmt.Name.Value)
+		return false
+	}
+	if letStmt.Name.TokenLiteral() != name {
+		t.Errorf("letStmt.Name.TokenLiteral() not '%s'. got=%s",
+			name, letStmt.Name.TokenLiteral())
+		return false
+	}
+	return true
+}
+
+func checkParserErrors(t *testing.T, p *Parser) {
+	errors := p.Errors()
+	if len(errors) == 0 {
+		return
+	}
+	t.Errorf("parser has %d errors", len(errors))
+	for _, msg := range errors {
+		t.Errorf("parser error: %q", msg)
+	}
+	t.FailNow()
 }

@@ -68,13 +68,26 @@ func (numberExpression *NumberExpression) expressionNode() {
 
 type OperatorExpression struct {
 	Left     *Expression
-	Operator token.Token
+	Operator string
 	Right    *Expression
+	Token    token.Token
 }
 
-func (numberExpression *NumberExpression) TokenLiteral() string {
-	return numberExpression.Token.Literal
+func (operatorExpression *OperatorExpression) TokenLiteral() string {
+	return operatorExpression.Token.Literal
 }
 
-func (numberExpression *NumberExpression) expressionNode() {
+func (operatorExpression *OperatorExpression) expressionNode() {
+}
+
+type ReturnStatement struct {
+	Expression *Expression
+	Token      token.Token
+}
+
+func (returnStatement *ReturnStatement) TokenLiteral() string {
+	return returnStatement.Token.Literal
+}
+
+func (returnStatement *ReturnStatement) statementNode() {
 }
