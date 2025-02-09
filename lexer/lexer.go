@@ -157,9 +157,9 @@ func (l *Lexer) handleLessThen() token.Token {
 		ch := l.ch
 		l.readChar()
 		literal := string(ch) + string(l.ch)
-		return token.Token{Type: token.NOT_EQ, Literal: literal}
+		return token.Token{Type: token.LT_OR_EQ, Literal: literal}
 	} else {
-		return newToken(token.BANG, l.ch)
+		return newToken(token.LT, l.ch)
 	}
 }
 
@@ -168,9 +168,9 @@ func (l *Lexer) handleGreaterThen() token.Token {
 		ch := l.ch
 		l.readChar()
 		literal := string(ch) + string(l.ch)
-		return token.Token{Type: token.NOT_EQ, Literal: literal}
+		return token.Token{Type: token.GT_OR_EQ, Literal: literal}
 	} else {
-		return newToken(token.BANG, l.ch)
+		return newToken(token.GT, l.ch)
 	}
 }
 

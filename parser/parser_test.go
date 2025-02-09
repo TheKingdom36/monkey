@@ -9,7 +9,7 @@ import (
 
 func TestLetStatements(t *testing.T) {
 	input := `
-		let x  5;
+		let x = 5;
 		let y = 10;
 		let foobar = 838383;
 	`
@@ -28,14 +28,15 @@ func TestLetStatements(t *testing.T) {
 	}
 	tests := []struct {
 		expectedIdentifier string
+		expectedExpression string
 	}{
-		{"x"},
-		{"y"},
-		{"foobar"},
+		{"x", "5"},
+		{"y", "10"},
+		{"foobar", "838383"},
 	}
 	for i, tt := range tests {
 		stmt := program.Statements[i]
-		if !testLetStatement(t, stmt, tt.expectedIdentifier) {
+		if !testLetStatement(t, stmt, tt.expectedIdentifier, tt.expectedExpression) {
 			return
 		}
 	}
@@ -61,17 +62,17 @@ func TestReturnStatements(t *testing.T) {
 	tests := []struct {
 		expectedExpression string
 	}{
-		{"x"},
+		{"5"},
 	}
 	for i, tt := range tests {
 		stmt := program.Statements[i]
-		if !testLetStatement(t, stmt, tt.expectedExpression) {
+		if !testReturnStatement(t, stmt, tt.expectedExpression) {
 			return
 		}
 	}
 }
 
-func testLetStatement(t *testing.T, s ast.Statement, name string) bool {
+func testLetStatement(t *testing.T, s ast.Statement, name string, expressionVal string) bool {
 	if s.TokenLiteral() != "let" {
 		t.Errorf("s.TokenLiteral not 'let'. got=%q", s.TokenLiteral())
 		return false
@@ -90,6 +91,32 @@ func testLetStatement(t *testing.T, s ast.Statement, name string) bool {
 			name, letStmt.Name.TokenLiteral())
 		return false
 	}
+
+	if letStmt.Value.String() != expressionVal {
+		t.Errorf("letStmt.Value.String() not '%s'. got=%s",
+			expressionVal, letStmt.Value.String())
+		return false
+	}
+
+	return true
+}
+
+func testReturnStatement(t *testing.T, s ast.Statement, returnVal string) bool {
+	if s.TokenLiteral() != "return" {
+		t.Errorf("s.TokenLiteral not 'return'. got=%q", s.TokenLiteral())
+		return false
+	}
+
+	returnStmt, ok := s.(*ast.ReturnStatement)
+	if !ok {
+		t.Errorf("s not *ast.ReturnStatement. got=%T", s)
+		return false
+	}
+	if returnStmt.ReturnValue.String() != returnVal {
+		t.Errorf("returnStmt.ReturnValue.String() not '%s'. got=%s", returnVal, returnStmt.String())
+		return false
+	}
+
 	return true
 }
 
@@ -152,6 +179,7 @@ func TestIntegerLiteralExpression(t *testing.T) {
 	testIntegerLiteral(t, stmt.Expression, 5)
 
 }
+
 func testIntegerLiteral(t *testing.T, il ast.Expression, value int64) bool {
 	integ, ok := il.(*ast.IntegerLiteral)
 	if !ok {
@@ -224,6 +252,8 @@ func TestParsingInfixExpressions(t *testing.T) {
 		{"5 != 5;", 5, "!=", 5},
 	}
 	for _, tt := range prefixTests {
+
+		t.Logf("Testing \"%s\"", tt.input)
 		l := lexer.New(tt.input)
 		p := New(l)
 		program := p.ParseProgram()
@@ -250,6 +280,72 @@ func TestParsingInfixExpressions(t *testing.T) {
 		}
 		if !testIntegerLiteral(t, exp.Right, tt.right) {
 			return
+		}
+	}
+}
+
+func TestOperatorPrecedenceParsing(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{
+			"-a * b",
+			"((-a) * b)",
+		},
+		{
+			"!-a",
+			"(!(-a))",
+		},
+		{
+			"a + b + c",
+			"((a + b) + c)",
+		},
+		{
+			"a + b - c",
+			"((a + b) - c)",
+		},
+		{
+			"a * b * c",
+			"((a * b) * c)",
+		},
+		{
+			"a * b / c",
+			"((a * b) / c)",
+		},
+		{
+			"a + b / c",
+			"(a + (b / c))",
+		},
+		{
+			"a + b * c + d / e - f",
+			"(((a + (b * c)) + (d / e)) - f)",
+		},
+		{
+			"3 + 4; -5 * 5",
+			"(3 + 4)((-5) * 5)",
+		},
+		{
+			"5 > 4 == 3 < 4",
+			"((5 > 4) == (3 < 4))",
+		},
+		{
+			"5 < 4 != 3 > 4",
+			"((5 < 4) != (3 > 4))",
+		},
+		{
+			"3 + 4 * 5 == 3 * 1 + 4 * 5",
+			"((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
+		},
+	}
+	for _, tt := range tests {
+		l := lexer.New(tt.input)
+		p := New(l)
+		program := p.ParseProgram()
+		checkParserErrors(t, p)
+		actual := program.String()
+		if actual != tt.expected {
+			t.Errorf("expected=%q, got=%q", tt.expected, actual)
 		}
 	}
 }

@@ -107,16 +107,15 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 		return nil
 	}
 
-	p.nextToken()
-
 	stmt.Name = &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
 
 	if !p.expectPeek(token.ASSIGN) {
 		return nil
 	}
 
-	//TODO implement
-	// stmt.Value = p.parseExpression()
+	p.nextToken()
+
+	stmt.Value = p.parseExpression(LOWEST)
 	for !p.curTokenIs(token.SEMICOLON) {
 		p.nextToken()
 	}
@@ -129,8 +128,7 @@ func (p *Parser) parseReturnStatement() *ast.ReturnStatement {
 
 	p.nextToken()
 
-	//TODO implement
-	// stmt.Value = p.parseExpression()
+	stmt.ReturnValue = p.parseExpression(LOWEST)
 	for !p.curTokenIs(token.SEMICOLON) {
 		p.nextToken()
 	}
@@ -139,7 +137,7 @@ func (p *Parser) parseReturnStatement() *ast.ReturnStatement {
 }
 
 func (p *Parser) noPrefixParserError(t token.TokenType) {
-	msg := fmt.Sprintf("no prefix parse function has been found for %d", t)
+	msg := fmt.Sprintf("no prefix parse function has been found for %s", t)
 	p.errors = append(p.errors, msg)
 }
 
@@ -176,21 +174,18 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 		p.noPrefixParserError(p.curToken.Type)
 		return nil
 	}
-
 	leftExp := prefix()
 
-	if p.peekPrecedence() > precedence {
+	if !p.peekTokenIs(token.SEMICOLON) && precedence < p.peekPrecedence() {
 		var infixFn = p.infixParseFns[p.peekToken.Type]
 		if infixFn == nil {
-			return nil
+			return leftExp
 		}
 
 		p.nextToken()
 
 		leftExp = infixFn(leftExp)
-
 	}
-
 	return leftExp
 }
 
