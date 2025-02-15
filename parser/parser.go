@@ -175,16 +175,13 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 		return nil
 	}
 	leftExp := prefix()
-
-	if !p.peekTokenIs(token.SEMICOLON) && precedence < p.peekPrecedence() {
-		var infixFn = p.infixParseFns[p.peekToken.Type]
-		if infixFn == nil {
+	for !p.peekTokenIs(token.SEMICOLON) && precedence < p.peekPrecedence() {
+		infix := p.infixParseFns[p.peekToken.Type]
+		if infix == nil {
 			return leftExp
 		}
-
 		p.nextToken()
-
-		leftExp = infixFn(leftExp)
+		leftExp = infix(leftExp)
 	}
 	return leftExp
 }
