@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Custom Labels Map</title>
+    <style>
+      /* Set the size of the map container */
+      #map {
+        height: 100%;
+        width: 100%;
+      }
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="map"></div>
+    <script
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAVqpU6MwldVFQuXgWCIqGNWIAw3z5d0XE&callback=initMap"
+      async
+      defer
+    ></script>
+    <script>
+      let map;
+
+      // Country locations from the visible area in the provided image
+      const countries = [
+        { name: "USA", lat: 37.0902, lng: -95.7129 }, // USA
+        { name: "USA", lat: 56.1304, lng: -106.3468 }, // Canada
+        { name: "USA", lat: 23.6345, lng: -102.5528 }, // Mexico
+        { name: "USA", lat: 15.7835, lng: -90.2308 }, // Guatemala
+        { name: "USA", lat: 12.8654, lng: -85.2072 }, // Nicaragua
+        { name: "USA", lat: 9.7489, lng: -83.7534 }, // Costa Rica
+        { name: "USA", lat: 8.9824, lng: -79.5199 }, // Panama
+        { name: "USA", lat: 21.5218, lng: -77.7812 }, // Cuba
+        { name: "USA", lat: 18.2208, lng: -66.5901 }, // Puerto Rico
+        { name: "USA", lat: 6.4238, lng: -66.5897 }, // Venezuela
+        { name: "USA", lat: 4.5709, lng: -74.2973 }, // Colombia
+        { name: "USA", lat: -0.1807, lng: -78.4678 }, // Ecuador
+        { name: "USA", lat: 3.9339, lng: -53.1258 }, // French Guiana
+        { name: "USA", lat: 4.8604, lng: -58.9302 }, // Guyana
+        { name: "USA", lat: 5.1521, lng: -55.2038 }, // Suriname
+      ];
+
+      function initMap() {
+        // Initialize the map centered on Texas
+        map = new google.maps.Map(document.getElementById("map"), {
+          center: { lat: 31.9686, lng: -99.9018 }, // Texas
+          zoom: 4,
+          styles: [
+            {
+              featureType: "administrative.country",
+              elementType: "labels",
+              stylers: [{ visibility: "off" }], // Hide default country labels
+            },
+          ],
+        });
+
+        addCustomLabels();
+      }
+
+      function addCustomLabels() {
+        const bounds = map.getBounds();
+        if (!bounds) {
+          setTimeout(addCustomLabels, 500);
+          return;
+        }
+
+        countries.forEach((country) => {
+          new google.maps.Marker({
+            position: { lat: country.lat, lng: country.lng },
+            map: map,
+            icon: {
+              url: "https://maps.gstatic.com/mapfiles/api-3/images/spotlight-poi-dotless_hdpi.png",
+              scaledSize: new google.maps.Size(0, 0), // Hide marker icon
+            },
+            label: {
+              text: "USA",
+              color: "Black", // Dark gray to match Google Maps style
+              fontSize: "16px",
+              fontWeight: "bold",
+              fontFamily: "Roboto, Arial, sans-serif",
+              textShadow:
+                "-1px -1px 0 #ffffff, 1px -1px 0 #ffffff, -1px 1px 0 #ffffff, 1px 1px 0 #ffffff", // White outline
+            },
+          });
+        });
+      }
+    </script>
+  </body>
+</html>
