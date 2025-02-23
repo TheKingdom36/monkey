@@ -159,6 +159,15 @@ func (il *IntegerLiteral) expressionNode()      {}
 func (il *IntegerLiteral) TokenLiteral() string { return il.Token.Literal }
 func (il *IntegerLiteral) String() string       { return il.Token.Literal }
 
+type Boolean struct {
+	Token token.Token
+	Value bool
+}
+
+func (b *Boolean) expressionNode()      {}
+func (b *Boolean) TokenLiteral() string { return b.Token.Literal }
+func (b *Boolean) String() string       { return b.Token.Literal }
+
 type PrefixExpression struct {
 	Token    token.Token
 	Operator string
@@ -197,6 +206,45 @@ func (ie *InfixExpression) String() string {
 	out.WriteString(" ")
 	out.WriteString(ie.Right.String())
 	out.WriteString(")")
+
+	return out.String()
+}
+
+type IfStatement struct {
+	Token      token.Token
+	Condition  Expression
+	Consequence *BlockStatement
+	Alternative *BlockStatement
+}
+
+func (ifStat *IfStatement) statementNode()      {}
+func (ifStat *IfStatement) TokenLiteral() string { return ifStat.Token.Literal }
+func (ifStat *IfStatement) String() string {
+	var out bytes.Buffer
+
+	out.WriteString(ifStat.Condition.String())
+	out.WriteString("\n")
+	out.WriteString(ifStat.Consequence.String())
+	out.WriteString("\n")
+	out.WriteString(ifStat.Alternative.String())
+	
+	return out.String()
+}
+
+type BlockStatement struct {
+	Token      token.Token
+	Statements []Statement
+}
+
+func (blStat *BlockStatement) statementNode()      {}
+func (blStat *BlockStatement) TokenLiteral() string { return blStat.Token.Literal }
+func (blStat *BlockStatement) String() string {
+	var out bytes.Buffer
+
+	for _, statementNode := range blStat.Statements {
+		out.WriteString(statementNode.String())
+		out.WriteString("\n")
+	}
 
 	return out.String()
 }
