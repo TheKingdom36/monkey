@@ -323,8 +323,10 @@ func TestParsingIfStatement(t *testing.T) {
 		input       string
 		condition   string
 		consequence string
+		alternative string
 	}{
-		{"{if(true){let x = \"hello\"}", "true", "\"hello\""},
+		{"if(true){x}", "true", "x", ""},
+		{"if(true){x}else{y}", "true", "x", "y"},
 	}
 	for _, tt := range prefixTests {
 		l := lexer.New(tt.input)
@@ -335,7 +337,7 @@ func TestParsingIfStatement(t *testing.T) {
 			t.Fatalf("program.Statements does not contain %d statements. got=%d\n",
 				1, len(program.Statements))
 		}
-		ifStmt, ok := program.Statements[0].(*ast.IfStatement)
+		ifStmt, ok := program.Statements[0].(*ast.IfExpression)
 		if !ok {
 			t.Fatalf("program.Statements[0] is not ast.IfStatement. got=%s",
 				program.Statements[0])
@@ -343,7 +345,22 @@ func TestParsingIfStatement(t *testing.T) {
 
 		if ifStmt.Condition.String() != tt.condition {
 			t.Fatalf("If Statment Condition is not correct. expected=%s got=%s",
-				ifStmt.Condition.String(),tt.condition)
+				ifStmt.Condition.String(), tt.condition)
+		}
+
+		if ifStmt.Consequence.String() != tt.consequence {
+			t.Fatalf("If Statment consequence is not correct. expected=%s got=%s",
+				ifStmt.Consequence.String(), tt.consequence)
+		}
+
+		if tt.alternative == "" && ifStmt.Alternative != nil {
+			t.Fatalf("If Statment alternative is not correct. expected no alternative block, got=%s",
+				ifStmt.Alternative.String())
+		}
+
+		if tt.alternative != "" && ifStmt.Alternative.String() != tt.alternative {
+			t.Fatalf("If Statment alternative is not correct. expected=%s got=%s",
+				ifStmt.Alternative.String(), tt.alternative)
 		}
 	}
 }
@@ -497,4 +514,42 @@ func testInfixExpression(t *testing.T, exp ast.Expression, left interface{}, ope
 	}
 
 	return true
+}
+
+func TestFunctionLiteralParsing(t *testing.T) {
+	input := `fn(x, y) { x + y; }`
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	checkParserErrors(t, p)
+	if len(program.Statements) != 1 {
+		t.Fatalf("program.Statements does not contain %d statements. got=%d\n",
+			1, len(program.Statements))
+	}
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("program.Statements[0] is not ast.ExpressionStatement. got=%T",
+			program.Statements[0])
+	}
+	function, ok := stmt.Expression.(*ast.FunctionLiteral)
+	if !ok {
+		t.Fatalf("stmt.Expression is not ast.FunctionLiteral. got=%T",
+			stmt.Expression)
+	}
+	if len(function.Parameters) != 2 {
+		t.Fatalf("function literal parameters wrong. want 2, got=%d\n",
+			len(function.Parameters))
+	}
+	testLiteralExpression(t, function.Parameters[0], "x")
+	testLiteralExpression(t, function.Parameters[1], "y")
+	if len(function.Body.Statements) != 1 {
+		t.Fatalf("function.Body.Statements has not 1 statements. got=%d\n",
+			len(function.Body.Statements))
+	}
+	bodyStmt, ok := function.Body.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("function body stmt is not ast.ExpressionStatement. got=%T",
+			function.Body.Statements[0])
+	}
+	testInfixExpression(t, bodyStmt.Expression, "x", "+", "y")
 }

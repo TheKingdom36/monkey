@@ -3,6 +3,7 @@ package ast
 import (
 	"bytes"
 	"monkey/token"
+	"strings"
 )
 
 type Node interface {
@@ -210,41 +211,62 @@ func (ie *InfixExpression) String() string {
 	return out.String()
 }
 
-type IfStatement struct {
-	Token      token.Token
-	Condition  Expression
+type IfExpression struct {
+	Token       token.Token
+	Condition   Expression
 	Consequence *BlockStatement
 	Alternative *BlockStatement
 }
 
-func (ifStat *IfStatement) statementNode()      {}
-func (ifStat *IfStatement) TokenLiteral() string { return ifStat.Token.Literal }
-func (ifStat *IfStatement) String() string {
+func (ifEx *IfExpression) statementNode()       {}
+func (ifEx *IfExpression) TokenLiteral() string { return ifEx.Token.Literal }
+func (ifEx *IfExpression) String() string {
 	var out bytes.Buffer
 
-	out.WriteString(ifStat.Condition.String())
+	out.WriteString(ifEx.Condition.String())
 	out.WriteString("\n")
-	out.WriteString(ifStat.Consequence.String())
+	out.WriteString(ifEx.Consequence.String())
 	out.WriteString("\n")
-	out.WriteString(ifStat.Alternative.String())
-	
+	out.WriteString(ifEx.Alternative.String())
+
 	return out.String()
 }
 
 type BlockStatement struct {
-	Token      token.Token
+	Token      token.Token // the { token
 	Statements []Statement
 }
 
-func (blStat *BlockStatement) statementNode()      {}
-func (blStat *BlockStatement) TokenLiteral() string { return blStat.Token.Literal }
-func (blStat *BlockStatement) String() string {
+func (bs *BlockStatement) statementNode()       {}
+func (bs *BlockStatement) TokenLiteral() string { return bs.Token.Literal }
+func (bs *BlockStatement) String() string {
 	var out bytes.Buffer
-
-	for _, statementNode := range blStat.Statements {
-		out.WriteString(statementNode.String())
-		out.WriteString("\n")
+	for _, s := range bs.Statements {
+		out.WriteString(s.String())
 	}
+	return out.String()
+}
 
+type FunctionLiteral struct {
+	Token      token.Token // the fn token
+	Parameters []*Identifier
+	Body       *BlockStatement
+}
+
+func (fl *FunctionLiteral) expressionNode()      {}
+func (fl *FunctionLiteral) TokenLiteral() string { return fl.Token.Literal }
+func (fl *FunctionLiteral) String() string {
+	var out bytes.Buffer
+	out.WriteString("fn")
+
+	params := []string{}
+	for _, p := range fl.Parameters {
+		params = append(params, p.String())
+	}
+	out.WriteString(fl.TokenLiteral())
+	out.WriteString("(")
+	out.WriteString(strings.Join(params, ", "))
+	out.WriteString(") ")
+	out.WriteString(fl.Body.String())
 	return out.String()
 }

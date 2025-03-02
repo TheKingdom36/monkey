@@ -6,7 +6,6 @@ import (
 	"monkey/lexer"
 	"monkey/token"
 	"strconv"
-	"text/template/parse"
 )
 
 const (
@@ -88,10 +87,12 @@ func (p *Parser) parseStatement() ast.Statement {
 	switch p.curToken.Type {
 	case token.LET:
 		return p.parseLetStatement()
+	case token.FUNCTION:
+		return p.parseFunctionLiteral()
 	case token.RETURN:
 		return p.parseReturnStatement()
 	case token.IF:
-		return p.parseIfStatement()
+		return p.parseIfExpression()
 	default:
 		return p.parseExpressionStatement()
 	}
@@ -142,36 +143,74 @@ func (p *Parser) parseReturnStatement() *ast.ReturnStatement {
 	return &stmt
 }
 
-func (p *Parser) parseIfStatement() *ast.IfStatement {
-	stmt := ast.IfStatement{Token: p.curToken}
+func (p *Parser) parseIfExpression() *ast.IfExpression {
+	ifExpression := ast.IfExpression{Token: p.curToken}
+
+	if !p.expectPeek(token.LPAREN) {
+		return nil
+	}
+
 	p.nextToken()
+	ifExpression.Condition = p.parseExpression(LOWEST)
 
-	stmt.Condition = p.parseExpression(LOWEST)
-
-	if p.expectPeek(token.LBRACE) {
-		stmt.Consequence = p.parseBlockStatement()
+	if !p.expectPeek(token.RPAREN) {
+		return nil
 	}
-	
+
+	if !p.expectPeek(token.LBRACE) {
+		return nil
+	}
+
+	ifExpression.Consequence = p.parseBlockStatement()
+
 	if p.peekTokenIs(token.ELSE) {
+		p.nextToken()
 
-		stmt.Alternative = p.parseBlockStatement()
+		if !p.expectPeek(token.LBRACE) {
+			return nil
+		}
+
+		ifExpression.Alternative = p.parseBlockStatement()
 	}
 
-	for !p.curTokenIs(token.SEMICOLON) {
+	return &ifExpression
+}
+
+func (p *Parser) parseFunctionLiteral() *ast.FunctionLiteral {
+
+	fnLiteral := &ast.FunctionLiteral{Token: p.curToken}
+	if p.expectPeek(token.LPAREN) {
+		return nil
+	}
+	fnLiteral.Parameters = []*ast.Identifier{}
+
+	for p.curToken.Type != token.RPAREN {
+
+		ident := &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+		fnLiteral.Parameters = append(fnLiteral.Parameters, ident)
 		p.nextToken()
 	}
 
-	return &stmt
+	return fnLiteral
+
 }
 
 func (p *Parser) parseBlockStatement() *ast.BlockStatement {
 
-	
+	blckStat := &ast.BlockStatement{Token: p.curToken}
 
-	return &ast.BlockStatement{}
+	p.nextToken()
+
+	for !p.curTokenIs(token.EOF) && !p.curTokenIs(token.RBRACE) {
+		stmt := p.parseStatement()
+		if stmt != nil {
+			blckStat.Statements = append(blckStat.Statements, stmt)
+		}
+		p.nextToken()
+	}
+
+	return blckStat
 }
-
-
 
 func (p *Parser) noPrefixParserError(t token.TokenType) {
 	msg := fmt.Sprintf("no prefix parse function has been found for %s", t)
