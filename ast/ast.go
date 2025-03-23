@@ -218,16 +218,19 @@ type IfExpression struct {
 	Alternative *BlockStatement
 }
 
-func (ifEx *IfExpression) statementNode()       {}
+func (ifEx *IfExpression) expressionNode()      {}
 func (ifEx *IfExpression) TokenLiteral() string { return ifEx.Token.Literal }
 func (ifEx *IfExpression) String() string {
 	var out bytes.Buffer
 
+	out.WriteString("if(")
 	out.WriteString(ifEx.Condition.String())
-	out.WriteString("\n")
+	out.WriteString("){")
 	out.WriteString(ifEx.Consequence.String())
-	out.WriteString("\n")
-	out.WriteString(ifEx.Alternative.String())
+	out.WriteString("}")
+	if ifEx.Alternative != nil {
+		out.WriteString(ifEx.Alternative.String())
+	}
 
 	return out.String()
 }
@@ -268,5 +271,26 @@ func (fl *FunctionLiteral) String() string {
 	out.WriteString(strings.Join(params, ", "))
 	out.WriteString(") ")
 	out.WriteString(fl.Body.String())
+	return out.String()
+}
+
+type CallExpression struct {
+	Token     token.Token // The '(' token
+	Function  Expression  // Identifier or FunctionLiteral
+	Arguments []Expression
+}
+
+func (ce *CallExpression) expressionNode()      {}
+func (ce *CallExpression) TokenLiteral() string { return ce.Token.Literal }
+func (ce *CallExpression) String() string {
+	var out bytes.Buffer
+	args := []string{}
+	for _, a := range ce.Arguments {
+		args = append(args, a.String())
+	}
+	out.WriteString(ce.Function.String())
+	out.WriteString("(")
+	out.WriteString(strings.Join(args, ", "))
+	out.WriteString(")")
 	return out.String()
 }
