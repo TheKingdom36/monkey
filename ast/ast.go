@@ -97,23 +97,6 @@ func (numberExpression *NumberExpression) String() string {
 	return out.String()
 }
 
-func (numberExpression *NumberExpression) expressionNode() {
-}
-
-type OperatorExpression struct {
-	Left     *Expression
-	Operator string
-	Right    *Expression
-	Token    token.Token
-}
-
-func (operatorExpression *OperatorExpression) TokenLiteral() string {
-	return operatorExpression.Token.Literal
-}
-
-func (operatorExpression *OperatorExpression) expressionNode() {
-}
-
 type ReturnStatement struct {
 	Token       token.Token
 	ReturnValue Expression
